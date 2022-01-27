@@ -12,5 +12,7 @@ Digitally Signed Application v1.0.6.0 (2022-01-27)
 
 <img alt="Main From" src="CsvSchemaAnalyser/Documents/Images/JocysCom.CsvSchemaAnalyser.png" width="629" height="674">
 
+<img alt="Log From" src="CsvSchemaAnalyser/Documents/Images/JocysCom.CsvSchemaAnalyser_Log.png" width="629" height="674">
+
 
 
