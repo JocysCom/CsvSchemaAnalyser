@@ -10,7 +10,7 @@
 	<Product>CSV Schema Analyser</Product>
 	<Description>Analyse CSV file content and generate schema definitions.</Description>
 	<ApplicationIcon>App.ico</ApplicationIcon>
-	<Version>1.0.6</Version>
+	<Version>1.0.7</Version>
 	<RepositoryUrl>https://github.com/JocysCom/CsvSchemaAnalyser</RepositoryUrl>
 	<PackageProjectUrl>https://www.jocys.com</PackageProjectUrl>
 	<Copyright>Copyright © Jocys.com 2022</Copyright>

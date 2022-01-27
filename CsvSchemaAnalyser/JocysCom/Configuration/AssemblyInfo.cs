@@ -387,9 +387,11 @@ namespace JocysCom.ClassLibrary.Configuration
 		{
 			get
 			{
-				string codeBase = Assembly.Location;
-				UriBuilder uri = new UriBuilder(codeBase);
-				string path = Uri.UnescapeDataString(uri.Path);
+				var codeBase = Assembly.Location;
+				if (string.IsNullOrEmpty(codeBase))
+					return codeBase;
+				var uri = new UriBuilder(codeBase);
+				var path = Uri.UnescapeDataString(uri.Path);
 				return path;
 			}
 		}

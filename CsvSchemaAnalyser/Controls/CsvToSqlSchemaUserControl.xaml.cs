@@ -102,6 +102,8 @@ namespace JocysCom.CsvSchemaAnalyser.Controls
 							RuntimeHelper.DetectType(ref column, values[i]);
 						}
 					}
+					if (MainWindow.IsClosing)
+						return false;
 					return true;
 				});
 				// Add C# declaration.
