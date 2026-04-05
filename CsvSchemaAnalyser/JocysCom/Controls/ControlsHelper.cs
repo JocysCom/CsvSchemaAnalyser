@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -102,6 +105,7 @@ namespace JocysCom.ClassLibrary.Controls
 				return Task.Run(async () =>
 				{
 					// Wait 1 second, which will allow to release the button.
+					// Logical delay without blocking the current hardware thread.
 					await Task.Delay(millisecondsDelay.Value).ConfigureAwait(true);
 					await BeginInvoke(action);
 				});
@@ -112,7 +116,8 @@ namespace JocysCom.ClassLibrary.Controls
 		}
 
 		/// <summary>Executes the specified action delegate asynchronously on main User Interface (UI) Thread.</summary>
-		/// <param name="action">The action delegate to execute asynchronously.</param>
+		/// <param name="method">The delegate to execute asynchronously.</param>
+		/// <param name="args">The arguments to pass to the delegate.</param>
 		/// <returns>The started System.Threading.Tasks.Task.</returns>
 		public static Task BeginInvoke(Delegate method, params object[] args)
 		{
@@ -125,7 +130,7 @@ namespace JocysCom.ClassLibrary.Controls
 		/// <param name="action">The action delegate to execute synchronously.</param>
 		public static void Invoke(Action action)
 		{
-			if (action == null)
+			if (action is null)
 				throw new ArgumentNullException(nameof(action));
 			InitInvokeContext();
 			if (InvokeRequired)
@@ -140,10 +145,11 @@ namespace JocysCom.ClassLibrary.Controls
 		}
 
 		/// <summary>Executes the specified action delegate synchronously on main Graphical User Interface (GUI) Thread.</summary>
-		/// <param name="action">The delegate to execute synchronously.</param>
+		/// <param name="method">The delegate to execute synchronously.</param>
+		/// <param name="args">The arguments to pass to the delegate.</param>
 		public static object Invoke(Delegate method, params object[] args)
 		{
-			if (method == null)
+			if (method is null)
 				throw new ArgumentNullException(nameof(method));
 			// Run method on main Graphical User Interface thread.
 			if (InvokeRequired)
@@ -166,14 +172,19 @@ namespace JocysCom.ClassLibrary.Controls
 		{
 			try
 			{
-				System.Diagnostics.Process.Start(url);
+				if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+					Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+				else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+					Process.Start("xdg-open", url);
+				else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+					Process.Start("open", url);
 			}
 			catch (System.ComponentModel.Win32Exception winEx)
 			{
 				if (winEx.ErrorCode == -2147467259)
 					MessageBoxShow(winEx.Message);
 			}
-			catch (Exception ex)
+			catch (System.Exception ex)
 			{
 				MessageBoxShow(ex.Message);
 			}
@@ -182,7 +193,7 @@ namespace JocysCom.ClassLibrary.Controls
 		private static void MessageBoxShow(string message)
 		{
 #if NETCOREAPP // .NET Core
-			System.Windows.Forms.MessageBox.Show(message);
+			System.Windows.MessageBox.Show(message);
 #elif NETSTANDARD // .NET Standard
 #elif NETFRAMEWORK // .NET Framework
 			// Requires: PresentationFramework.dll
@@ -200,24 +211,38 @@ namespace JocysCom.ClassLibrary.Controls
 		{
 			try
 			{
-				var fi = new System.IO.FileInfo(path);
-				// Brings up the "Windows cannot open this file" dialog if association not found.
-				var psi = new System.Diagnostics.ProcessStartInfo(path);
-				psi.UseShellExecute = true;
-				psi.WorkingDirectory = fi.Directory.FullName;
-				psi.ErrorDialog = true;
-				if (arguments != null)
-					psi.Arguments = arguments;
+
+				var psi = new System.Diagnostics.ProcessStartInfo();
+				if (Uri.TryCreate(path, UriKind.Absolute, out Uri uri) && uri.Scheme != Uri.UriSchemeFile)
+				{
+					// Open URL
+					psi.UseShellExecute = true;
+					psi.FileName = uri.AbsoluteUri;
+					if (arguments != null)
+						psi.Arguments = arguments;
+					psi.WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+				}
+				else
+				{
+					// Open file/directory
+					psi.FileName = path;
+					if (arguments != null)
+						psi.Arguments = arguments;
+					var fi = new System.IO.FileInfo(path);
+					psi.UseShellExecute = true;
+					psi.ErrorDialog = true;
+					psi.WorkingDirectory = fi.Directory?.FullName ?? Environment.CurrentDirectory;
+				}
 				System.Diagnostics.Process.Start(psi);
 			}
-			catch (Exception) { }
+			catch { }
 		}
 
 		#endregion
 
 		public static PropertyInfo GetPrimaryKeyPropertyInfo(object item)
 		{
-			if (item == null)
+			if (item is null)
 				return null;
 			var t = item.GetType();
 			PropertyInfo pi = null;
@@ -229,13 +254,13 @@ namespace JocysCom.ClassLibrary.Controls
 			if (pi != null)
 				return pi;
 #else
-				// Try to find property by EntityFramework EdmScalarPropertyAttribute (System.Data.Entity.dll).
-				pi = t.GetProperties()
-					.Where(x =>
-						x.GetCustomAttributes(typeof(System.Data.Objects.DataClasses.EdmScalarPropertyAttribute), true)
-						.Cast<System.Data.Objects.DataClasses.EdmScalarPropertyAttribute>()
-						.Any(a => a.EntityKeyProperty))
-					.FirstOrDefault();
+			// Try to find property by EntityFramework EdmScalarPropertyAttribute (System.Data.Entity.dll).
+			pi = t.GetProperties()
+				.Where(x =>
+					x.GetCustomAttributes(typeof(System.Data.Objects.DataClasses.EdmScalarPropertyAttribute), true)
+					.Cast<System.Data.Objects.DataClasses.EdmScalarPropertyAttribute>()
+					.Any(a => a.EntityKeyProperty))
+				.FirstOrDefault();
 			if (pi != null)
 				return pi;
 
@@ -281,6 +306,40 @@ namespace JocysCom.ClassLibrary.Controls
 					: item.GetType().GetProperty(keyPropertyName);
 			return pi;
 		}
+
+		#region Add cool downs to controls.
+
+		// Default cool-down 1 second.
+		public static TimeSpan ControlCooldown = new TimeSpan(0, 0, 1);
+
+		public static ConcurrentDictionary<int, DateTime> ControlCooldowns { get; } = new ConcurrentDictionary<int, DateTime>();
+
+		/// <summary>
+		/// Returns true if control is on cool-down.
+		/// </summary>
+		/// <param name="control">Control to check.</param>
+		public static bool IsOnCooldown(object control, int? milliseconds = null)
+		{
+			lock (ControlCooldowns)
+			{
+				var now = DateTime.UtcNow;
+				int hashCode = control.GetHashCode();
+				// Cleanup expired cooldowns.
+				var expiredKeys = ControlCooldowns.Where(kv => now > kv.Value).Select(kv => kv.Key).ToList();
+				foreach (var key in expiredKeys)
+					ControlCooldowns.TryRemove(key, out _);
+				// If on cool-down then...
+				if (ControlCooldowns.ContainsKey(hashCode))
+					return true;
+				var newTime = milliseconds.HasValue
+					? now.AddMilliseconds(milliseconds.Value)
+					: now.Add(ControlCooldown);
+				ControlCooldowns.TryAdd(hashCode, newTime);
+				return false;
+			}
+		}
+
+		#endregion
 
 	}
 }

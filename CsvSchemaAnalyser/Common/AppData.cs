@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace JocysCom.CsvSchemaAnalyser
 {
-	public class AppData : ISettingsItem, INotifyPropertyChanged
+	public class AppData : SettingsItem, INotifyPropertyChanged
 	{
 		public AppData()
 		{

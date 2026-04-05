@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -9,7 +10,7 @@ namespace JocysCom.ClassLibrary.Text
 
 	public static class Helper
 	{
-		private static readonly Regex tagRx = new Regex("{((?<prefix>[0-9A-Z]+)[.])?(?<property>[0-9A-Z]+)(:(?<format>[^{}]+))?}", RegexOptions.IgnoreCase);
+		private static readonly Regex tagRx = new Regex("{((?<prefix>[\\w]+)[.])?(?<property>[\\w]+)(:(?<format>[^{}]+))?}", RegexOptions.IgnoreCase);
 
 		/// <summary>
 		/// Replace {TypeName.PropertyName[:format]} or {customPrefix.propertyName[:format]} pattern with the property value of the object.
@@ -41,8 +42,10 @@ namespace JocysCom.ClassLibrary.Text
 			{
 				foreach (Match m in matches)
 				{
-					if (usePrefix && string.Compare(prefix, m.Groups["prefix"].Value, true) != 0) continue;
-					if (string.Compare(p.Name, m.Groups["property"].Value, true) != 0) continue;
+					if (usePrefix && string.Compare(prefix, m.Groups["prefix"].Value, true) != 0)
+						continue;
+					if (string.Compare(p.Name, m.Groups["property"].Value, true) != 0)
+						continue;
 					var format = m.Groups["format"].Value;
 					var value = p.GetValue(o, null);
 					var text = string.IsNullOrEmpty(format)
@@ -54,6 +57,68 @@ namespace JocysCom.ClassLibrary.Text
 			return s;
 		}
 
+		/// <summary>
+		/// Replace {TypeName.PropertyName[:format]} or {customPrefix.propertyName[:format]} pattern with the property value of the object.
+		/// </summary>
+		/// <remarks>
+		/// Example 1: Supply current date. Use {customPrefix.propertyName[:format]}.
+		///	var template = "file_{date.Now:yyyyMMdd}.txt";
+		/// var fileName = JocysCom.ClassLibrary.Text.Helper.Replace(template, DateTime.Now, true, "date");
+		///
+		/// Example 2: Supply profile object. Use {TypeName.PropertyName[:format]}.
+		///	var template = "Profile full name: {Profile.first_name} {Profile.last_name}";
+		/// var fileName = JocysCom.ClassLibrary.Text.Helper.Replace(template, profile);
+		/// </remarks>
+		/// <param name="s">String template</param>
+		/// <param name="o">Object values.</param>
+		public static string ReplaceDictionary(string s, Dictionary<string, object> o, bool usePrefix = true, string customPrefix = null)
+		{
+			if (string.IsNullOrEmpty(s))
+				return s;
+			if (o == null)
+				return s;
+			var prefix = customPrefix;
+			var matches = tagRx.Matches(s);
+			foreach (var key in o.Keys)
+			{
+				foreach (Match m in matches)
+				{
+					if (usePrefix && string.Compare(prefix, m.Groups["prefix"].Value, true) != 0)
+						continue;
+					if (string.Compare(key, m.Groups["property"].Value, true) != 0)
+						continue;
+					var format = m.Groups["format"].Value;
+					var value = o[key];
+					var text = string.IsNullOrEmpty(format)
+						? string.Format("{0}", value)
+						: string.Format("{0:" + format + "}", value);
+					s = Replace(s, m.Value, text, StringComparison.OrdinalIgnoreCase);
+				}
+			}
+			return s;
+		}
+
+		public static List<string> GetReplaceMacros<T>(bool usePrefix = true, string customPrefix = null)
+		{
+			var list = new List<string>();
+			var t = typeof(T);
+			var properties = t.GetProperties();
+			var prefix = string.IsNullOrEmpty(customPrefix) ? t.Name : customPrefix;
+			foreach (var p in properties)
+			{
+				var macro = usePrefix
+					? prefix + "." + p.Name
+					: p.Name;
+				list.Add(macro);
+			}
+			return list;
+		}
+
+		/// <summary>
+		/// Used to parametrize path. For example:
+		/// Convert "C:\Program Files\JocysCom\Focus Logger" to
+		/// "C:\Program Files\{Company}\{Product}"
+		/// </summary>
 		public static string Replace<T>(T o, string s, bool usePrefix = true, string customPrefix = null)
 		{
 			if (string.IsNullOrEmpty(s))
@@ -63,17 +128,24 @@ namespace JocysCom.ClassLibrary.Text
 			var t = typeof(T);
 			var properties = t.GetProperties();
 			var prefix = string.IsNullOrEmpty(customPrefix) ? t.Name : customPrefix;
+			var replacement = new List<(string Param, string Value)>();
 			foreach (var p in properties)
 			{
 				var value = $"{p.GetValue(o, null)}";
 				if (string.IsNullOrEmpty(value))
 					continue;
-				var text = "{";
+				var param = "{";
 				if (usePrefix && !string.IsNullOrEmpty(prefix))
-					text += prefix;
-				text += p.Name + "}";
-				s = Replace(s, value, text, StringComparison.OrdinalIgnoreCase);
+					param += prefix;
+				param += p.Name + "}";
+				replacement.Add((param, value));
 			}
+			replacement = replacement
+				.OrderByDescending(x => x.Value.Length)
+				.ThenBy(x => x.Param.Length)
+				.ToList();
+			foreach (var item in replacement)
+				s = Replace(s, item.Value, item.Param, StringComparison.OrdinalIgnoreCase);
 			return s;
 		}
 
@@ -112,9 +184,9 @@ namespace JocysCom.ClassLibrary.Text
 		/// <remarks>This is very fast search.</remarks>
 		public static int IndexOf(byte[] input, byte[] value, int startIndex = 0)
 		{
-			if (input == null)
+			if (input is null)
 				throw new ArgumentNullException(nameof(input));
-			if (value == null)
+			if (value is null)
 				throw new ArgumentNullException(nameof(value));
 			var endIndex = input.Length - value.Length;
 			int v;
@@ -135,13 +207,12 @@ namespace JocysCom.ClassLibrary.Text
 		}
 
 		/// <summary>
-		/// Get value from text [name]:\s*[value]. And parse to specific type.
+		/// Get value from text [name]:\s*[value].
 		/// </summary>
 		/// <param name="name">Prefix name.</param>
 		/// <param name="s">String to get value from.</param>
 		/// <param name="defaultValue">Override default value.</param>
-		/// <returns></returns>
-		public static T GetValue<T>(string name, string s, T defaultValue = default(T))
+		public static string GetValue(string name, string s, string defaultValue = "")
 		{
 			var pattern = string.Format(@"{0}:\s*(?<Value>[^\s]+)", name);
 			var rx = new Regex(pattern, RegexOptions.IgnoreCase);
@@ -149,43 +220,71 @@ namespace JocysCom.ClassLibrary.Text
 			if (!m.Success)
 				return defaultValue;
 			var v = m.Groups["Value"].Value;
-			if (typeof(T) == typeof(string))
-				return (T)(object)v;
-			return JocysCom.ClassLibrary.Runtime.RuntimeHelper.TryParse(v, defaultValue);
+			return v;
 		}
-
-		public static string GetValue(string name, string s, string defaultValue = null)
-		{
-			return GetValue<string>(name, s, defaultValue);
-		}
-
-#if NETCOREAPP // .NET Core
-#elif NETSTANDARD // .NET Standard
-#else // .NET Framework
 
 		/// <summary>
 		/// Convert string value to an escaped C# string literal.
 		/// </summary>
-		public static string ToLiteral(string input, string language = "JScript")
+		public static string ToLiteral(string input)
 		{
-			using (var writer = new StringWriter())
-			{
-				using (var provider = System.CodeDom.Compiler.CodeDomProvider.CreateProvider(language))
-				{
-					var exp = new System.CodeDom.CodePrimitiveExpression(input);
-					System.CodeDom.Compiler.CodeGeneratorOptions options = null;
-					provider.GenerateCodeFromExpression(exp, writer, options);
-					var literal = writer.ToString();
-					var rxLines = new Regex("\"\\s*[+]\\s*[\r\n]\"", RegexOptions.Multiline);
-					literal = rxLines.Replace(literal, "");
-					//literal = literal.Replace(string.Format("\" +{0}\t\"", Environment.NewLine), "");
-					//literal = literal.Replace("\\r\\n", "\\r\\n\"+\r\n\"");
-					return literal;
-				}
-			}
+			return FormatLiteral(input, quote: true);
 		}
 
-#endif
+		/// <summary>Return a C# string literal (optionally quoted) that represents <paramref name="value"/>.</summary>
+		private static string FormatLiteral(string value, bool quote)
+		{
+			if (value is null) return "null";
+
+			var sb = new StringBuilder(value.Length + 2);
+			if (quote) sb.Append('"');
+
+			for (int i = 0; i < value.Length; i++)
+			{
+				char c = value[i];
+				switch (c)
+				{
+					case '\"': sb.Append("\\\""); break; // quote
+					case '\\': sb.Append("\\\\"); break; // backslash
+					case '\0': sb.Append("\\0"); break;
+					case '\a': sb.Append("\\a"); break;
+					case '\b': sb.Append("\\b"); break;
+					case '\f': sb.Append("\\f"); break;
+					case '\n': sb.Append("\\n"); break;
+					case '\r': sb.Append("\\r"); break;
+					case '\t': sb.Append("\\t"); break;
+					case '\v': sb.Append("\\v"); break;
+
+					default:
+						// Line/para separators & NEL must be escaped in C# source, and any control chars.
+						if (char.IsControl(c) || c == '\u0085' || c == '\u2028' || c == '\u2029')
+						{
+							sb.Append("\\u").Append(((int)c).ToString("x4"));
+						}
+						else if (char.IsSurrogate(c))
+						{
+							// If it's a valid surrogate pair, keep it as-is (e.g., emoji).
+							if (char.IsHighSurrogate(c) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+							{
+								sb.Append(c).Append(value[++i]);
+							}
+							else
+							{
+								// Unpaired surrogate — escape it.
+								sb.Append("\\u").Append(((int)c).ToString("x4"));
+							}
+						}
+						else
+						{
+							sb.Append(c);
+						}
+						break;
+				}
+			}
+			if (quote)
+				sb.Append('"');
+			return sb.ToString();
+		}
 
 		#region Word Wrap
 
@@ -201,7 +300,7 @@ namespace JocysCom.ClassLibrary.Text
 		/// <returns>The modified text</returns>
 		public static string WrapText(string text, int width, bool useSpaces = false)
 		{
-			if (text == null)
+			if (text is null)
 				throw new ArgumentNullException(nameof(text));
 			// Lucidity check
 			if (width < 1)
@@ -277,28 +376,69 @@ namespace JocysCom.ClassLibrary.Text
 
 		#endregion
 
-		public static string IdentText(int tabs, string s, char ident = '\t')
+		/// <summary>
+		/// Add or remove ident.
+		/// </summary>
+		/// <param name="s">String to ident.</param>
+		/// <param name="tabs">Positive - add ident, negative - remove ident.</param>
+		/// <param name="ident">Ident character</param>
+		public static string IdentText(string s, int tabs = 1, string ident = "\t")
 		{
 			if (tabs == 0)
 				return s;
-			if (s == null)
-				s = string.Empty;
+			if (string.IsNullOrEmpty(s))
+				return s;
 			var sb = new StringBuilder();
 			var tr = new StringReader(s);
-			var prefix = string.Empty;
-			for (var i = 0; i < tabs; i++)
-				prefix += ident;
+			var prefix = string.Concat(Enumerable.Repeat(ident, tabs));
 			string line;
-			while ((line = tr.ReadLine()) != null)
+			var lines = s.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+			for (int i = 0; i < lines.Length; i++)
 			{
-				if (sb.Length > 0)
-					sb.AppendLine();
-				if (tabs > 0)
-					sb.Append(prefix);
-				sb.Append(line);
+				line = lines[i];
+				if (line != "")
+				{
+					// If add idents then...
+					if (tabs > 0)
+						sb.Append(prefix);
+					// If remove idents then...
+					else if (tabs < 0)
+					{
+						var count = 0;
+						// Count how much idents could be removed
+						while (line.Substring(count * ident.Length, ident.Length) == ident && count < tabs)
+							count++;
+						line = line.Substring(count * ident.Length);
+					}
+				}
+				if (i < lines.Length - 1)
+					sb.AppendLine(line);
+				else
+					sb.Append(line);
 			}
 			tr.Dispose();
 			return sb.ToString();
+		}
+
+		public static string RemoveIdent(string s)
+		{
+			s = s.Trim('\n', '\r', ' ', '\t').Replace("\r\n", "\n");
+			var lines = s.Split('\n');
+			var checkLines = lines
+				// Ignore first trimmed line.
+				.Where((x, i) => i > 0 && !string.IsNullOrWhiteSpace(x)).ToArray();
+			if (checkLines.Length == 0)
+				return s;
+			var minIndent = checkLines.Min(x => x.Length - x.TrimStart(' ', '\t').Length);
+			for (var i = 0; i < lines.Length; i++)
+			{
+				if (lines[i].Length > minIndent)
+					// Don't trim first line.
+					lines[i] = lines[i].Substring(i == 0 ? 0 : minIndent);
+				else if (string.IsNullOrWhiteSpace(lines[i]))
+					lines[i] = "";
+			}
+			return string.Join(Environment.NewLine, lines);
 		}
 
 		public static string BytesToStringBlock(string s, bool addIndex, bool addHex, bool addText)
@@ -309,7 +449,7 @@ namespace JocysCom.ClassLibrary.Text
 
 		public static string BytesToStringBlock(byte[] bytes, bool addIndex, bool addHex, bool addText, int offset = 0, int size = -1, int? maxDisplayLines = null)
 		{
-			if (bytes == null)
+			if (bytes is null)
 				throw new ArgumentNullException(nameof(bytes));
 			var builder = new StringBuilder();
 			var hx = new StringBuilder();

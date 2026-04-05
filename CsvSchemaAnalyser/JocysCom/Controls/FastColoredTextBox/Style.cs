@@ -144,7 +144,7 @@ public static void ConfigureForShapes(Graphics gr)
                 float y = position.Y + range.tb.LineInterval/2;
                 float x = position.X - range.tb.CharWidth/3;
 
-                if (ForeBrush == null)
+                if (ForeBrush is null)
                     ForeBrush = new SolidBrush(range.tb.ForeColor);
 
                 if (range.tb.ImeAllowed)

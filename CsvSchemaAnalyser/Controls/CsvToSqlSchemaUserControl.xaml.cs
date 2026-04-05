@@ -1,4 +1,5 @@
 ﻿using FastColoredTextBoxNS;
+using JocysCom.ClassLibrary;
 using JocysCom.ClassLibrary.Configuration;
 using JocysCom.ClassLibrary.Controls;
 using JocysCom.ClassLibrary.IO;
@@ -40,7 +41,7 @@ namespace JocysCom.CsvSchemaAnalyser.Controls
 			var s = "";
 			try
 			{
-				var column = RuntimeHelper.DetectType(values);
+				var column = DetectTypeItem.DetectType(values);
 				column.Name = name;
 				s += "\r\n" + string.Join("\r\n", column.Log) + "\r\n\r\n";
 				s += column.ToCSharpString();
@@ -71,7 +72,7 @@ namespace JocysCom.CsvSchemaAnalyser.Controls
 			{
 				var fi = new System.IO.FileInfo(path);
 				var totalSize = fi.Length;
-				var columns = new List<RuntimeHelper.DetectTypeItem>();
+				var columns = new List<DetectTypeItem>();
 				var rows = 0;
 				JocysCom.ClassLibrary.Files.CsvHelper.Read(path, (position, line, values) =>
 				{
@@ -82,7 +83,7 @@ namespace JocysCom.CsvSchemaAnalyser.Controls
 						_UpdateSkipper.Update(pea);
 						for (int i = 0; i < values.Length; i++)
 						{
-							var column = new RuntimeHelper.DetectTypeItem();
+							var column = new DetectTypeItem();
 							column.Name = values[i];
 							columns.Add(column);
 						}
@@ -99,7 +100,7 @@ namespace JocysCom.CsvSchemaAnalyser.Controls
 						for (int i = 0; i < columns.Count; i++)
 						{
 							var column = columns[i];
-							RuntimeHelper.DetectType(ref column, values[i]);
+                            DetectTypeItem.DetectType(ref column, values[i]);
 						}
 					}
 					if (MainWindow.IsClosing)

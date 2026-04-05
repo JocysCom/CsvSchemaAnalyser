@@ -96,7 +96,7 @@ namespace FastColoredTextBoxNS
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            if (target == null)
+            if (target is null)
                 return;
 
             Point car = PointToClient(target.PointToScreen(target.PlaceToPoint(target.Selection.Start)));

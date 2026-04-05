@@ -365,7 +365,7 @@ namespace FastColoredTextBoxNS
             StreamReader sr = new StreamReader(fs, fileEncoding);
 
             var s = sr.ReadLine();
-            if (s == null)
+            if (s is null)
                 s = "";
 
             //call event handler
@@ -374,7 +374,7 @@ namespace FastColoredTextBoxNS
                 var args = new LineNeededEventArgs(s, i);
                 LineNeeded(this, args);
                 s = args.DisplayedLineText;
-                if (s == null)
+                if (s is null)
                     return;
             }
 
@@ -405,7 +405,7 @@ namespace FastColoredTextBoxNS
 
         public override int GetLineLength(int i)
         {
-            if (base.lines[i] == null)
+            if (base.lines[i] is null)
                 return 0;
             else
                 return base.lines[i].Count;
@@ -413,7 +413,7 @@ namespace FastColoredTextBoxNS
 
         public override bool LineHasFoldingStartMarker(int iLine)
         {
-            if (lines[iLine] == null)
+            if (lines[iLine] is null)
                 return false;
             else
                 return !string.IsNullOrEmpty(lines[iLine].FoldingStartMarker);
@@ -421,7 +421,7 @@ namespace FastColoredTextBoxNS
 
         public override bool LineHasFoldingEndMarker(int iLine)
         {
-            if (lines[iLine] == null)
+            if (lines[iLine] is null)
                 return false;
             else
                 return !string.IsNullOrEmpty(lines[iLine].FoldingEndMarker);

@@ -160,7 +160,7 @@ namespace FastColoredTextBoxNS
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     Ctrl = Alt = Shift = false;
                 }

@@ -23,19 +23,15 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Design;
 using System.Drawing.Drawing2D;
-using System.Drawing.Text;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
-using System.Windows.Forms.Design;
 using Microsoft.Win32;
 using Timer = System.Windows.Forms.Timer;
 
@@ -135,7 +131,7 @@ namespace FastColoredTextBoxNS
             //register type provider
             TypeDescriptionProvider prov = TypeDescriptor.GetProvider(GetType());
             object theProvider =
-                prov.GetType().GetField("Provider", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(prov);
+                prov.GetType().GetField("Provider", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(prov);
             if (theProvider.GetType() != typeof (FCTBDescriptionProvider))
                 TypeDescriptor.AddProvider(new FCTBDescriptionProvider(GetType()), GetType());
             //drawing optimization
@@ -1136,7 +1132,7 @@ namespace FastColoredTextBoxNS
 
                 sourceTextBox = value;
 
-                if (sourceTextBox == null)
+                if (sourceTextBox is null)
                 {
                     InitTextSource(CreateTextSource());
                     lines.InsertLine(0, TextSource.CreateLine());
@@ -1771,9 +1767,9 @@ namespace FastColoredTextBoxNS
 
         protected virtual void OnToolTip()
         {
-            if (ToolTip == null)
+            if (ToolTip is null)
                 return;
-            if (ToolTipNeeded == null)
+            if (ToolTipNeeded is null)
                 return;
 
             //get place under mouse
@@ -2264,7 +2260,7 @@ namespace FastColoredTextBoxNS
             if (needRiseTextChangedDelayed)
             {
                 needRiseTextChangedDelayed = false;
-                if (delayedTextChangedRange == null)
+                if (delayedTextChangedRange is null)
                     return;
                 delayedTextChangedRange = Range.GetIntersectionWith(delayedTextChangedRange);
                 delayedTextChangedRange.Expand();
@@ -2360,7 +2356,7 @@ namespace FastColoredTextBoxNS
         /// <returns>Layer index of this style</returns>
         public int AddStyle(Style style)
         {
-            if (style == null) return -1;
+            if (style is null) return -1;
 
             int i = GetStyleIndex(style);
             if (i >= 0)
@@ -2404,7 +2400,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public virtual void ShowFindDialog(string findText)
         {
-            if (findForm == null)
+            if (findForm is null)
                 findForm = new FindForm(this);
 
             if (findText != null)
@@ -2432,7 +2428,7 @@ namespace FastColoredTextBoxNS
         {
             if (ReadOnly)
                 return;
-            if (replaceForm == null)
+            if (replaceForm is null)
                 replaceForm = new ReplaceForm(this);
 
             if (findText != null)
@@ -2732,7 +2728,7 @@ namespace FastColoredTextBoxNS
         /// <param name="text"></param>
         public virtual void InsertText(string text, bool jumpToCaret)
         {
-            if (text == null)
+            if (text is null)
                 return;
             if (text == "\r")
                 text = "\n";
@@ -2774,7 +2770,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public virtual Range InsertText(string text, Style style, bool jumpToCaret)
         {
-            if (text == null)
+            if (text is null)
                 return null;
 
             //remember last caret position
@@ -2795,7 +2791,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public virtual Range InsertTextAndRestoreSelection(Range replaceRange, string text, Style style)
         {
-            if (text == null)
+            if (text is null)
                 return null;
 
             var oldStart = PlaceToPosition(Selection.Start);
@@ -2828,7 +2824,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public virtual void AppendText(string text, Style style)
         {
-            if (text == null)
+            if (text is null)
                 return;
 
             Selection.ColumnSelectionMode = false;
@@ -3638,7 +3634,7 @@ namespace FastColoredTextBoxNS
                     break;
 
                 case FCTBAction.FindNext:
-                    if (findForm == null || findForm.tbFind.Text == "")
+                    if (findForm is null || findForm.tbFind.Text == "")
                         ShowFindDialog();
                     else
                         findForm.FindNext(findForm.tbFind.Text);
@@ -4732,7 +4728,7 @@ namespace FastColoredTextBoxNS
 
 
             EventHandler<AutoIndentEventArgs> calculator = AutoIndentNeeded;
-            if (calculator == null)
+            if (calculator is null)
                 if (Language != Language.Custom && SyntaxHighlighter != null)
                     calculator = SyntaxHighlighter.AutoIndentNeeded;
                 else
@@ -4896,7 +4892,7 @@ namespace FastColoredTextBoxNS
 
         protected override void OnPaintBackground(PaintEventArgs e)
         {
-            if (BackBrush == null)
+            if (BackBrush is null)
                 base.OnPaintBackground(e);
             else
                 e.Graphics.FillRectangle(BackBrush, ClientRectangle);
@@ -6058,7 +6054,7 @@ namespace FastColoredTextBoxNS
             //
             if (updating > 0)
             {
-                if (updatingRange == null)
+                if (updatingRange is null)
                     updatingRange = args.ChangedRange.Clone();
                 else
                 {
@@ -6088,7 +6084,7 @@ namespace FastColoredTextBoxNS
             base.OnTextChanged(args);
 
             //dalayed event stuffs
-            if (delayedTextChangedRange == null)
+            if (delayedTextChangedRange is null)
                 delayedTextChangedRange = args.ChangedRange.Clone();
             else
                 delayedTextChangedRange = delayedTextChangedRange.GetUnionWith(args.ChangedRange);
@@ -6467,7 +6463,6 @@ namespace FastColoredTextBoxNS
         /// <summary>
         /// Exapnds all folded blocks
         /// </summary>
-        /// <param name="iLine"></param>
         public virtual void ExpandAllFoldingBlocks()
         {
             for (int i = 0; i < LinesCount; i++)
@@ -7238,7 +7233,7 @@ namespace FastColoredTextBoxNS
                 if (!backward) break;
             }
 
-            if (res == null) return false;
+            if (res is null) return false;
             Selection = res;
             Invalidate();
             return true;
@@ -7301,7 +7296,7 @@ namespace FastColoredTextBoxNS
             exporter.UseStyleTag = false;
             exporter.IncludeLineNumbers = settings.IncludeLineNumbers;
 
-            if (range == null)
+            if (range is null)
                 range = Range;
 
             if (range.Text == string.Empty)
@@ -7730,12 +7725,12 @@ window.status = ""#print"";
 
             // Determine, if the dragged string should be copied or moved
             bool copyMode =
-                (draggedRange == null) ||       // drag from outside
+                (draggedRange is null) ||       // drag from outside
                 (draggedRange.ReadOnly) ||      // dragged range is read only
                 ((ModifierKeys & Keys.Control) != Keys.None);
 
             //drag from outside?
-            if (draggedRange == null)
+            if (draggedRange is null)
             {
                 Selection.BeginUpdate();
                 // Insert text
@@ -7838,11 +7833,11 @@ window.status = ""#print"";
 
             // Determine, if the dragged string should be copied or moved
             bool copyMode =
-                (draggedRange == null) ||       // drag from outside
+                (draggedRange is null) ||       // drag from outside
                 (draggedRange.ReadOnly) ||      // dragged range is read only
                 ((ModifierKeys & Keys.Control) != Keys.None);
 
-            if (draggedRange == null)//drag from outside
+            if (draggedRange is null)//drag from outside
             {
                 Selection.BeginUpdate();
                 // Insert text
@@ -8400,14 +8395,14 @@ window.status = ""#print"";
         /// <summary>
         /// Footer of page.
         /// Here you can use special codes: &amp;w (Window title), &amp;D, &amp;d (Date), &amp;t(), &amp;4 (Time), &amp;p (Current page number), &amp;P (Total number of pages),  &amp;&amp; (A single ampersand), &amp;b (Right justify text, Center text. If &amp;b occurs once, then anything after the &amp;b is right justified. If &amp;b occurs twice, then anything between the two &amp;b is centered, and anything after the second &amp;b is right justified).
-        /// More detailed see <see cref="http://msdn.microsoft.com/en-us/library/aa969429(v=vs.85).aspx">here</see>
+        /// More detailed see <see href="http://msdn.microsoft.com/en-us/library/aa969429(v=vs.85).aspx">here</see>
         /// </summary>
         public string Footer { get; set; }
 
         /// <summary>
         /// Header of page
         /// Here you can use special codes: &amp;w (Window title), &amp;D, &amp;d (Date), &amp;t(), &amp;4 (Time), &amp;p (Current page number), &amp;P (Total number of pages),  &amp;&amp; (A single ampersand), &amp;b (Right justify text, Center text. If &amp;b occurs once, then anything after the &amp;b is right justified. If &amp;b occurs twice, then anything between the two &amp;b is centered, and anything after the second &amp;b is right justified).
-        /// More detailed see <see cref="http://msdn.microsoft.com/en-us/library/aa969429(v=vs.85).aspx">here</see>
+        /// More detailed see <see href="http://msdn.microsoft.com/en-us/library/aa969429(v=vs.85).aspx">here</see>
         /// </summary>
         public string Header { get; set; }
 

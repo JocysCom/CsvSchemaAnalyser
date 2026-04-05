@@ -359,10 +359,10 @@ namespace FastColoredTextBoxNS
             Cursor = Cursors.Default;
             BorderColor = Color.Silver;
             BackColor2 = Color.White;
-            BackColor = InnerControl == null ? Color.Silver : SystemColors.Control;
+            BackColor = InnerControl is null ? Color.Silver : SystemColors.Control;
             ForeColor = Color.Black;
             TextAlignment = StringAlignment.Near;
-            Font = Range.tb.Parent == null ? Range.tb.Font : Range.tb.Parent.Font;
+            Font = Range.tb.Parent is null ? Range.tb.Font : Range.tb.Parent.Font;
 
             if (InnerControl != null)
             {

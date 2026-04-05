@@ -857,7 +857,8 @@ namespace FastColoredTextBoxNS
         /// <summary>
         /// Sets folding markers
         /// </summary>
-        /// <param name="startEndFoldingPattern">Pattern for start and end folding line</param>
+        /// <param name="foldingPattern">Pattern for start and end folding line</param>
+        /// <param name="options">Regex options</param>
         public void SetFoldingMarkers(string foldingPattern, RegexOptions options)
         {
             foreach (var range in GetRanges(foldingPattern, options))
@@ -1507,7 +1508,7 @@ namespace FastColoredTextBoxNS
                     }
 
                 //create ReadOnlyStyle
-                if (readonlyStyle == null)
+                if (readonlyStyle is null)
                     readonlyStyle = new ReadOnlyStyle();
 
                 //set/clear style

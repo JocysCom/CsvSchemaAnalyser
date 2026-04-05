@@ -43,7 +43,7 @@ namespace FastColoredTextBoxNS
         public override string GetComponentName()
         {
             var ctrl = (instance as Control);
-            return ctrl == null ? null : ctrl.Name;
+            return ctrl is null ? null : ctrl.Name;
         }
 
         public override EventDescriptorCollection GetEvents()

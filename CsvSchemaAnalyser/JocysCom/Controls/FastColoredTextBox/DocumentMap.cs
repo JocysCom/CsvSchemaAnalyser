@@ -133,7 +133,7 @@ namespace FastColoredTextBoxNS
 
         protected override void OnPaint(PaintEventArgs e)
         {
-            if (target == null)
+            if (target is null)
                 return;
 
             var zoom = this.Scale * 100 / target.Zoom;
@@ -215,7 +215,7 @@ namespace FastColoredTextBoxNS
 
         private void Scroll(Point point)
         {
-            if (target == null)
+            if (target is null)
                 return;
 
             var zoom = this.Scale*100/target.Zoom;

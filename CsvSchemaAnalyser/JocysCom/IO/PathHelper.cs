@@ -14,23 +14,23 @@ namespace JocysCom.ClassLibrary.IO
 
 		public static void ValidateFileName(string name)
 		{
-			if (name == null)
+			if (name is null)
 				throw new ArgumentNullException(nameof(name));
-			var invalid = name.ToCharArray().Intersect(System.IO.Path.GetInvalidFileNameChars());
+			var invalid = name.Intersect(System.IO.Path.GetInvalidFileNameChars());
 			if (invalid.Any())
 				throw new ArgumentException(string.Format("Invalid file name chars found: {0}", string.Join(", ", invalid)), nameof(name));
 		}
 
 		/// <summary>
 		/// Method used to protect from
-		/// CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
+		/// SUPPRESS: CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')
 		/// https://cwe.mitre.org/data/definitions/78.html
 		/// </summary>
 		/// <param name="path"></param>
 		public static void ValidatePath(string path)
 		{
 			var d = System.IO.Path.GetDirectoryName(path);
-			var invalid = d.ToCharArray().Intersect(System.IO.Path.GetInvalidPathChars());
+			var invalid = d.Intersect(System.IO.Path.GetInvalidPathChars());
 			if (invalid.Any())
 				throw new ArgumentException(string.Format("Invalid path chars found: {0}", string.Join(", ", invalid)), nameof(path));
 			var name = System.IO.Path.GetFileName(path);
@@ -72,7 +72,7 @@ namespace JocysCom.ClassLibrary.IO
 		// Get Physical path from any type of path.
 		public static string GetPathPhysical(string relativeTo, string path)
 		{
-			if (path == null)
+			if (path is null)
 				throw new ArgumentNullException(nameof(path));
 			string physicalPath;
 			// If path is Physical. 
@@ -97,7 +97,7 @@ namespace JocysCom.ClassLibrary.IO
 		// Get Rooted path.
 		public static string GetPathRooted(string relativeTo, string path)
 		{
-			if (path == null) throw new ArgumentNullException(nameof(path));
+			if (path is null) throw new ArgumentNullException(nameof(path));
 			//if path already rooted then...
 			if (System.IO.Path.IsPathRooted(path))
 				return path;
@@ -123,7 +123,8 @@ namespace JocysCom.ClassLibrary.IO
 		/// Important: if relative is directory then path must end with '\' or '/'.
 		/// </summary>
 		/// <param name="relativeTo"></param>
-		/// <param name="pathTo"></param>
+		/// <param name="path"></param>
+		/// <param name="addCurrentDir"></param>
 		/// <returns></returns>
 		public static string GetRelativePath(string relativeTo, string path, bool addCurrentDir = true)
 		{
@@ -150,7 +151,7 @@ namespace JocysCom.ClassLibrary.IO
 		// Get Relative path from any type of path.
 		public static string GetPathVirtual(string relativeTo, string path)
 		{
-			if (path == null) throw new ArgumentNullException(nameof(path));
+			if (path is null) throw new ArgumentNullException(nameof(path));
 			// If path is not physical then just return.
 			if (!IsPathPhysical(path))
 				return path;
@@ -167,7 +168,7 @@ namespace JocysCom.ClassLibrary.IO
 		// Get parent folder from path.
 		public static string GetParentFolderPhysical(string relativeTo, string path)
 		{
-			if (path == null)
+			if (path is null)
 				throw new ArgumentNullException(nameof(path));
 			// Get physical path.
 			var physicalPath = GetPathPhysical(relativeTo, path);
@@ -180,7 +181,7 @@ namespace JocysCom.ClassLibrary.IO
 		// Get parent folder from path.
 		public static string GetParentFolderVirtual(string relativeTo, string path)
 		{
-			if (path == null)
+			if (path is null)
 				throw new ArgumentNullException(nameof(path));
 			// Get physical parent folder path.
 			var folderPath = GetParentFolderPhysical(relativeTo, path);
@@ -192,7 +193,7 @@ namespace JocysCom.ClassLibrary.IO
 
 		public static string GetFileName(string relativeTo, string path)
 		{
-			if (path == null)
+			if (path is null)
 				throw new ArgumentNullException(nameof(path));
 			// Make sure that path is physical.
 			var physicalPath = GetPathPhysical(relativeTo, path);
@@ -206,13 +207,13 @@ namespace JocysCom.ClassLibrary.IO
 
 		static Dictionary<string, string> _SpecialFolders;
 
-		static Dictionary<string, string> SpecialFolders
+		public static Dictionary<string, string> SpecialFolders
 		{
 			get
 			{
 				lock (SpecialFoldersLock)
 				{
-					if (_SpecialFolders == null)
+					if (_SpecialFolders is null)
 					{
 						var keys = (System.Environment.SpecialFolder[])Enum.GetValues(typeof(System.Environment.SpecialFolder));
 						var items = new List<KeyValuePair<string, string>>();

@@ -222,7 +222,7 @@ namespace FastColoredTextBoxNS
         {
             get
             {
-                if (cutOffPositions == null)
+                if (cutOffPositions is null)
                     cutOffPositions = new List<int>();
                 return cutOffPositions;
             }
@@ -238,7 +238,7 @@ namespace FastColoredTextBoxNS
                 switch (VisibleState)
                 {
                     case VisibleState.Visible:
-                         if (cutOffPositions == null)
+                         if (cutOffPositions is null)
                             return 1;
                          else
                             return cutOffPositions.Count + 1;
@@ -267,7 +267,7 @@ namespace FastColoredTextBoxNS
         /// </summary>
         public int GetWordWrapStringIndex(int iChar)
         {
-            if (cutOffPositions == null || cutOffPositions.Count == 0) return 0;
+            if (cutOffPositions is null || cutOffPositions.Count == 0) return 0;
             for (int i = 0; i < cutOffPositions.Count; i++)
                 if (cutOffPositions[i] >/*>=*/ iChar)
                     return i;
