@@ -12,9 +12,7 @@ namespace JocysCom.ClassLibrary.IO
 	public static partial class PathHelper
 	{
 
-#if NETSTANDARD
-#elif NETCOREAPP
-#else
+#if NETFRAMEWORK
 
 		#region Get Cased Path
 

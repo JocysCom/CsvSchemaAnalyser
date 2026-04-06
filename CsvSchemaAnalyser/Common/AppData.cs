@@ -12,7 +12,7 @@ namespace JocysCom.CsvSchemaAnalyser
 
 		public bool Enabled { get; set; }
 
-		public bool IsEmpty =>
+		public override bool IsEmpty =>
 			string.IsNullOrEmpty(CsvFile) &&
 			string.IsNullOrEmpty(CsvValue);
 
@@ -21,22 +21,6 @@ namespace JocysCom.CsvSchemaAnalyser
 
 		public string CsvValue { get => _CsvValue ?? @"2022-12-17 18:45:59"; set => SetProperty(ref _CsvValue, value); }
 		private string _CsvValue;
-
-		#region ■ INotifyPropertyChanged
-
-		public event PropertyChangedEventHandler PropertyChanged;
-
-		protected void SetProperty<T>(ref T property, T value, [CallerMemberName] string propertyName = null)
-		{
-			property = value;
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
-		{
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-		}
-
-		#endregion
+	
 	}
 }
